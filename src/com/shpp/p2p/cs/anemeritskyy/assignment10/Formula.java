@@ -22,6 +22,9 @@ public class Formula {
         for (Map.Entry<String, Double> variable : variables.entrySet()) {
             this.formula = this.formula.replaceAll(String.valueOf(variable.getKey()), String.valueOf(variable.getValue()));
         }
+        if (this.formula.startsWith("--")) {
+            this.formula = this.formula.substring(2);
+        }
     }
 
     /**

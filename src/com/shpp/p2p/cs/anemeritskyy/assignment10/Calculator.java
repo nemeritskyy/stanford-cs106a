@@ -1,9 +1,9 @@
 package com.shpp.p2p.cs.anemeritskyy.assignment10;
 
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 /**
  * This program calculate expression getting from constructor, also support variables
@@ -35,7 +35,14 @@ public class Calculator {
     public Calculator(String[] inputtedData) {
         Map<String, Double> variables;
         if (inputtedData.length != 0) {
-            variables = new HashMap<>();
+            variables = new TreeMap<>((o1, o2) -> { // comparator for sorting by length from longest to small
+                if (o1.length() > o2.length()) {
+                    return -1;
+                } else if (o1.length() < o2.length()) {
+                    return 1;
+                } else return o1.compareTo(o2);
+            });
+
             for (int i = 1; i < inputtedData.length; i++) {
                 String withoutSpaces = getStringWithoutSpaces(inputtedData[i]);
                 String variable = getVariable(withoutSpaces);
@@ -106,7 +113,7 @@ public class Calculator {
         double operationResult = 0;
 
         switch (operation) {
-            case '^' -> operationResult = powTo(operand1, operand2);
+            case '^' -> operationResult = Math.pow(operand1, operand2);
             case '/' -> {
                 if (operand2 == 0) throw new ArithmeticException();
                 operationResult = operand1 / operand2;
@@ -118,21 +125,6 @@ public class Calculator {
 
         removeAdjacentValues(scatteredFormula, indexOfOperator - 1, indexOfOperator + 1);
         scatteredFormula.add(indexOfOperator - 1, operationResult);
-    }
-
-    /**
-     * Pow number to degree of ascension
-     *
-     * @param operand1 number
-     * @param operand2 degree of ascension
-     * @return result of operation
-     */
-    private double powTo(double operand1, double operand2) {
-        double result = 1;
-        for (int i = 0; i < operand2; i++) {
-            result *= operand1;
-        }
-        return result;
     }
 
     /**

@@ -14,6 +14,12 @@ class Assignment10Part1Test {
 
     @Test
     public void calculatorTest() {
+        putExample(2, "--2");
+        putExample(2, "-b", "b=-2");
+        putExample(8, "-b*4", "b=-2");
+        putExample(11, "3-b*4", "b=-2");
+        putExample(-2, "1 + -a * 2 * 3.5 - ab + 2^3", "a = 2", "ab = -3");
+        putExample(Math.pow(4, 0.3), "4^0.3");
         putExample(4, "-2^2");
         putExample(-4, "0-2^2");
         putExample(-2, "1 + -a * 2 * 3.5 - y + 2^3", "a = 2", "y = -3");
