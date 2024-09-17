@@ -1,9 +1,7 @@
 package com.shpp.p2p.cs.anemeritskyy.assignment10;
 
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * This program calculate expression getting from constructor, also support variables
@@ -12,6 +10,10 @@ import java.util.TreeMap;
  * for simplify running use
  */
 public class Calculator {
+    /*
+    Debug mode for showing details as formula after parsing, formula with replacement variables for fast checking
+     */
+    public static boolean DEBUG = false;
     /*
     Formula with replaces variables to numbers
      */
@@ -89,7 +91,60 @@ public class Calculator {
      * Calculate every operation while list size !1
      */
     public void calculate() {
-        LinkedList<Object> scatteredFormula = Parser.scatterFormulaToElements(this.formula);
+        LinkedList<Object> scatteredFormula = Parser.scatterFormulaToElements(formula, formula.variables);
+        if (DEBUG) {
+            System.out.println("After parsing: " + scatteredFormula);
+            System.err.println("Formula for checking: " + scatteredFormula.stream().map(Objects::toString).collect(Collectors.joining("")));
+        }
+        checkBrackets(scatteredFormula);
+        scatteredFormula = checkTrigonometry(scatteredFormula);
+        doOperations(scatteredFormula);
+        result = (double) scatteredFormula.get(0);
+    }
+
+    /**
+     * Calculate trigonometric functions
+     *
+     * @param scatteredFormula formula without brackets if it has trigonometric functions, calculate it
+     * @return formula after calculation
+     */
+    private LinkedList<Object> checkTrigonometry(LinkedList<Object> scatteredFormula) {
+        LinkedList<Object> calculatedTrigonometryFormula = new LinkedList<>();
+        for (int i = 0; i < scatteredFormula.size(); i++) {
+            if (scatteredFormula.get(i) instanceof Trigonometry) {
+                double result;
+                double trigonometryValue = (double) scatteredFormula.get(i + 1);
+                switch (scatteredFormula.get(i)) {
+                    case Trigonometry.sin -> result = Math.sin(trigonometryValue);
+                    case Trigonometry.cos -> result = Math.cos(trigonometryValue);
+                    case Trigonometry.tan -> result = Math.tan(trigonometryValue);
+                    case Trigonometry.atan -> result = Math.atan(trigonometryValue);
+                    case Trigonometry.log10 -> result = Math.log10(trigonometryValue);
+                    case Trigonometry.log2 -> result = log2(trigonometryValue);
+                    case Trigonometry.sqrt -> result = Math.sqrt(trigonometryValue);
+                    default ->
+                            throw new IllegalStateException("Unexpected trigonometric function: " + scatteredFormula.get(i));
+                }
+                calculatedTrigonometryFormula.add(result);
+                i++;
+            } else {
+                calculatedTrigonometryFormula.add(scatteredFormula.get(i));
+            }
+        }
+        return calculatedTrigonometryFormula;
+    }
+
+    /**
+     * Calculate log base 2
+     */
+    private double log2(double trigonometryValue) {
+        return Math.log(trigonometryValue) / Math.log(2);
+    }
+
+    /**
+     * Calculate basic operations for inputted formula
+     */
+    private void doOperations(LinkedList<Object> scatteredFormula) {
         while (scatteredFormula.size() != 1) {
             for (Character operation : OPERATIONS) {
                 while (scatteredFormula.contains(operation)) {
@@ -97,7 +152,21 @@ public class Calculator {
                 }
             }
         }
-        result = (double) scatteredFormula.get(0);
+    }
+
+    /**
+     * Calculate formula in brackets
+     */
+    private void checkBrackets(LinkedList<Object> scatteredFormula) {
+        while (scatteredFormula.contains('(')) {
+            int lastOpenIndex = scatteredFormula.lastIndexOf('(');
+            int firstClosedIndex = lastOpenIndex + scatteredFormula.subList(lastOpenIndex, scatteredFormula.size()).indexOf(')');
+            LinkedList<Object> formulaInBrackets = new LinkedList<>(scatteredFormula.subList((lastOpenIndex + 1), (firstClosedIndex)));
+            formulaInBrackets = checkTrigonometry(formulaInBrackets);
+            doOperations(formulaInBrackets);
+            removeAdjacentValues(scatteredFormula, lastOpenIndex, firstClosedIndex);
+            scatteredFormula.add(lastOpenIndex, formulaInBrackets.get(0));
+        }
     }
 
     /**
@@ -142,7 +211,10 @@ public class Calculator {
      * Print result of calculation into console
      */
     public void showResult() {
-        System.out.printf("Result of calculation %s=%s", formula.getFormula(), result);
+        System.out.printf("""
+                Formula: %s
+                Variables: %s
+                Result of calculation %s""", formula.getFormula(), formula.variables, result);
     }
 
     /**

@@ -1,6 +1,7 @@
 package com.shpp.p2p.cs.anemeritskyy.assignment10;
 
 import java.util.LinkedList;
+import java.util.Map;
 
 /**
  * This class is assistant for parsing inputted formula
@@ -17,14 +18,37 @@ public class Parser {
      * @param inputtedFormula formula already with numbers without variables
      * @return list of parsed elements
      */
-    public static LinkedList<Object> scatterFormulaToElements(Formula inputtedFormula) {
+    public static LinkedList<Object> scatterFormulaToElements(Formula inputtedFormula, Map<String, Double> variables) {
         String formula = inputtedFormula.getFormula();
         LinkedList<Object> scatteredFormula = new LinkedList<>();
         boolean isPreviousNumber = false;
         StringBuilder currentElement = new StringBuilder();
         for (int i = 0; i < formula.length(); i++) {
+            for (Trigonometry func : Trigonometry.values()) { // parse trigonometric functions
+                if (formula.substring(i).startsWith(func.value)) {
+                    scatteredFormula.add(func);
+                    i += func.value.length();
+                }
+            }
+            for (Map.Entry<String, Double> variable : variables.entrySet()) { // replace variables
+                if (formula.substring(i).startsWith(variable.getKey())) {
+                    formula = formula.substring(0, i) + formula.substring(i).replaceFirst(variable.getKey(), String.valueOf(variable.getValue()));
+                }
+            }
+            if (formula.charAt(i) == '(') {
+                scatteredFormula.add(formula.charAt(i));
+                continue;
+            }
+            if (formula.charAt(i) == ')') {
+                if (!currentElement.isEmpty())
+                    scatteredFormula.add(Double.parseDouble(currentElement.toString()));
+                scatteredFormula.add(formula.charAt(i));
+                currentElement = new StringBuilder();
+                continue;
+            }
             if (matchesSymbolsOnIndex(i, formula) && isPreviousNumber) {
-                scatteredFormula.add(Double.parseDouble(currentElement.toString()));
+                if (!currentElement.isEmpty())
+                    scatteredFormula.add(Double.parseDouble(currentElement.toString()));
                 scatteredFormula.add(formula.charAt(i));
                 isPreviousNumber = false;
             } else {
@@ -36,10 +60,12 @@ public class Parser {
             }
         }
 
-        if (isPreviousNumber) { // for last element
-            scatteredFormula.add(Double.parseDouble(currentElement.toString()));
-        } else {
-            scatteredFormula.add(currentElement);
+        if (!currentElement.isEmpty()) {
+            if (isPreviousNumber) { // for last element
+                scatteredFormula.add(Double.parseDouble(currentElement.toString()));
+            } else {
+                scatteredFormula.add(currentElement);
+            }
         }
         return scatteredFormula;
     }

@@ -10,20 +10,19 @@ public class Formula {
      * Formula without variables
      */
     private String formula;
+    public Map<String, Double> variables;
 
     /**
-     * Constructor replace all variables to numbers
+     * Constructor with adding leading zero if starts with unary
      *
      * @param formula   formula inputted by user
      * @param variables collection of variables
      */
     public Formula(String formula, Map<String, Double> variables) {
         this.formula = formula;
-        for (Map.Entry<String, Double> variable : variables.entrySet()) {
-            this.formula = this.formula.replaceAll(String.valueOf(variable.getKey()), String.valueOf(variable.getValue()));
-        }
-        if (this.formula.startsWith("--")) {
-            this.formula = this.formula.substring(2);
+        this.variables = variables;
+        if (this.formula.startsWith("-")) {
+            this.formula = 0 + this.formula;
         }
     }
 
