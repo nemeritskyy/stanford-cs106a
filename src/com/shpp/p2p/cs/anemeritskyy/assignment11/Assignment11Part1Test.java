@@ -1,4 +1,4 @@
-package com.shpp.p2p.cs.anemeritskyy.assignment10;
+package com.shpp.p2p.cs.anemeritskyy.assignment11;
 
 import org.junit.jupiter.api.Test;
 
@@ -8,7 +8,7 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-class Assignment10Part1Test {
+class Assignment11Part1Test {
 
     private static final Map<String[], Double> examples = new HashMap<>();
 

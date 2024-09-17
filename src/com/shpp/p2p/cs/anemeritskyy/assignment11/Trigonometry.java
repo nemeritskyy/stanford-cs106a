@@ -1,4 +1,4 @@
-package com.shpp.p2p.cs.anemeritskyy.assignment10;
+package com.shpp.p2p.cs.anemeritskyy.assignment11;
 
 public enum Trigonometry {
     sin("sin"),
