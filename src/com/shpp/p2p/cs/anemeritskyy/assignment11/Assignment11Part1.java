@@ -9,6 +9,10 @@ package com.shpp.p2p.cs.anemeritskyy.assignment11;
 public class Assignment11Part1 {
     public static void main(String[] args) {
         Calculator calculator = new Calculator(args);
-        calculator.showResult();
+        if (Calculator.SHOW_DETAILS) {
+            calculator.showResult();
+        } else {
+            System.out.println(calculator.getResult());
+        }
     }
 }

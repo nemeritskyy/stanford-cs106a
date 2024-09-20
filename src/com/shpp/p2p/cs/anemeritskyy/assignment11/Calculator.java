@@ -14,6 +14,7 @@ public class Calculator {
     Debug mode for showing details as formula after parsing, formula with replacement variables for fast checking
      */
     public static boolean DEBUG = false;
+    public static boolean SHOW_DETAILS = false;
     /*
     Formula with replaces variables to numbers
      */
