@@ -1,14 +1,16 @@
 package com.shpp.p2p.cs.anemeritskyy.assignment12;
 
 import acm.graphics.GImage;
-import acm.graphics.GPoint;
 
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Stack;
 import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * This program find count of silhouette for inputted file using static method main and args[0] with the filename
+ * recommend add -Xss512M or above in VM options for increase memory
+ */
 public class Assignment12Part1 {
     /**
      * Folder with assets
@@ -20,27 +22,30 @@ public class Assignment12Part1 {
      */
     private final static int GARBAGE_COEFFICIENT = 10;
     /**
-     * Recommended 0.6 for remove artefacts caused by loss of quality during storage
+     * Recommended 0.65 for remove artefacts caused by loss of quality during storage
      */
-    private final static double ARTEFACT_COEFFICIENT = 0.6;
+    private final static double ARTEFACT_COEFFICIENT = 0.65;
     /**
-     * If Silhouette contain 1 shade this param may be true
-     * if Silhouette is color may be false
+     * Saturation of a pixel taken as a silhouette
      */
-    public static boolean isSilhouettePlain = true;
-    private static int colorDeep = 255;
-    public static int TEST_EXPECTED = 0;
+
+    /**
+     * Color of background in black-white
+     */
+    private static Color backgroundColorBW;
+    public static int TEST_EXPECTED;
 
     /**
      * This method find count of silhouette for inputted file, and show result in the console
+     *
      * @param args array with filename in args[0]
      */
     public static void main(String[] args) {
         String sourceFileName = checkFileName(args);
         List<Integer> allSilhouettes = findSilhouettes(sourceFileName);
         removeGarbage(allSilhouettes);
-        System.out.println("Count of silhouette(s): " + allSilhouettes.size());
         TEST_EXPECTED = allSilhouettes.size();
+        System.out.println("Count of silhouette(s): " + allSilhouettes.size());
     }
 
     /**
@@ -51,8 +56,10 @@ public class Assignment12Part1 {
      */
     private static void removeGarbage(List<Integer> allSilhouettes) {
         allSilhouettes.sort((o1, o2) -> o2 - o1); // sort from largest to small
-        int maxObject = allSilhouettes.getFirst();
-        allSilhouettes.removeIf(pixelsInSilhouettes -> pixelsInSilhouettes < maxObject * GARBAGE_COEFFICIENT / 100);
+        if (!allSilhouettes.isEmpty()) {
+            int maxObject = allSilhouettes.getFirst();
+            allSilhouettes.removeIf(pixelsInSilhouettes -> pixelsInSilhouettes < maxObject * GARBAGE_COEFFICIENT / 100);
+        }
     }
 
     /**
@@ -66,14 +73,13 @@ public class Assignment12Part1 {
         GImage sourceImage = new GImage(ASSETS_PATH + filename);
         int[][] sourceImageArray = sourceImage.getPixelArray();
         boolean[][] visitedPixels = new boolean[sourceImageArray.length][sourceImageArray[0].length];
-        int background = getBackground(sourceImageArray);
-        setColorDeep();
+        setBackgroundColorBW(sourceImageArray);
 
         for (int row = 0; row < sourceImageArray.length; ++row) {
             for (int col = 0; col < sourceImageArray[row].length; ++col) {
-                if (sourceImageArray[row][col] != background
+                if (pixelToBW(sourceImageArray[row][col]) != getBackgroundColorBW()
                         && !visitedPixels[row][col]) {
-                    startInitSilhouettes(allSilhouettes, sourceImageArray, visitedPixels, row, col, background);
+                    startInitSilhouettes(allSilhouettes, sourceImageArray, visitedPixels, row, col);
                 }
             }
         }
@@ -83,92 +89,69 @@ public class Assignment12Part1 {
 
     /**
      * This method init depth search for anticipated silhouette
+     * and add all what were found to list of silhouettes
      *
-     * @param allSilhouettes list of all silhouettes with garbage
+     * @param allSilhouettes   list of all silhouettes with garbage
      * @param sourceImageArray array with colors
-     * @param visitedPixels array of visited pixels
-     * @param row position in array
-     * @param col position in array
-     * @param background color
+     * @param visitedPixels    array of visited pixels
+     * @param row              position in array
+     * @param col              position in array
      */
-    private static void startInitSilhouettes(List<Integer> allSilhouettes, int[][] sourceImageArray, boolean[][] visitedPixels, int row, int col, int background) {
-        Stack<GPoint> stack = new Stack<>();
+    private static void startInitSilhouettes(List<Integer> allSilhouettes, int[][] sourceImageArray, boolean[][] visitedPixels, int row, int col) {
         AtomicInteger totalPixelsInGraph = new AtomicInteger(1);
-        stack.add(new GPoint(col, row));
-        depthFirstSearch(stack, totalPixelsInGraph, sourceImageArray, visitedPixels, background);
+        depthFirstSearch(row, col, totalPixelsInGraph, sourceImageArray, visitedPixels);
         allSilhouettes.add(totalPixelsInGraph.get());
     }
 
     /**
      * Get pixel and check theirs closest pixels
      *
-     * @param stack anticipated pixels of silhouette
-     * @param totalPixelsInSilhouette counter for current silhouette
-     * @param sourceImageArray array with colors
-     * @param visitedPixels array of visited pixels
-     * @param background color
+     * @param sourceImageArray        array with colors
+     * @param visitedPixels           array of visited pixels
+     * @param row                     position in array
+     * @param col                     position in array
+     * @param totalPixelsInSilhouette count of pixels in current silhouette
      */
-    private static void depthFirstSearch(Stack<GPoint> stack, AtomicInteger totalPixelsInSilhouette, int[][] sourceImageArray, boolean[][] visitedPixels, int background) {
-        while (!stack.isEmpty()) {
-            GPoint checkPixel = stack.pop();
-            int row = (int) checkPixel.getY();
-            int col = (int) checkPixel.getX();
-
-            if (!visitedPixels[row][col]) {
-                visitedPixels[row][col] = true;
-                totalPixelsInSilhouette.incrementAndGet();
-                checkClosestPixels(stack, sourceImageArray, visitedPixels, background, row, col);
-            }
+    private static void depthFirstSearch(int row, int col, AtomicInteger totalPixelsInSilhouette, int[][] sourceImageArray, boolean[][] visitedPixels) {
+        if (!visitedPixels[row][col]) {
+            visitedPixels[row][col] = true;
+            Color currentPixelBW = pixelToBW(sourceImageArray[row][col]);
+            if (currentPixelBW != backgroundColorBW)
+                checkClosestPixels(sourceImageArray, visitedPixels, row, col, totalPixelsInSilhouette);
         }
     }
 
     /**
+     * Check if closest pixels are part of current silhouette
      *
-     * @param stack anticipated pixels of silhouette
-     * @param sourceImageArray array with colors
-     * @param visitedPixels array of visited pixels
-     * @param background color
-     * @param row position in array
-     * @param col position in array
+     * @param sourceImageArray        array with colors
+     * @param visitedPixels           array of visited pixels
+     * @param row                     position in array
+     * @param col                     position in array
+     * @param totalPixelsInSilhouette count of pixels in current silhouette
      */
-    private static void checkClosestPixels(Stack<GPoint> stack, int[][] sourceImageArray, boolean[][] visitedPixels, int background, int row, int col) {
+    private static void checkClosestPixels(int[][] sourceImageArray, boolean[][] visitedPixels, int row, int col, AtomicInteger totalPixelsInSilhouette) {
         int previousRow = Math.max(0, row - 1);
         int nextRow = Math.min(sourceImageArray.length - 1, row + 1);
         int previousCol = Math.max(0, col - 1);
         int nextCol = Math.min(sourceImageArray[0].length - 1, col + 1);
 
-        //vertical && Horizontal pixels
-        checkLinkedPixel(stack, previousRow, col, sourceImageArray, visitedPixels, background);
-        checkLinkedPixel(stack, nextRow, col, sourceImageArray, visitedPixels, background);
-        checkLinkedPixel(stack, row, previousCol, sourceImageArray, visitedPixels, background);
-        checkLinkedPixel(stack, row, nextCol, sourceImageArray, visitedPixels, background);
-
-        //diagonals pixels
-        checkLinkedPixel(stack, previousRow, previousCol, sourceImageArray, visitedPixels, background);
-        checkLinkedPixel(stack, previousRow, nextCol, sourceImageArray, visitedPixels, background);
-        checkLinkedPixel(stack, nextRow, previousCol, sourceImageArray, visitedPixels, background);
-        checkLinkedPixel(stack, nextRow, nextCol, sourceImageArray, visitedPixels, background);
+        checkLinkedPixel(row, col, nextRow, col, sourceImageArray, visitedPixels, totalPixelsInSilhouette); // bottom
+        checkLinkedPixel(row, col, row, nextCol, sourceImageArray, visitedPixels, totalPixelsInSilhouette); // next column
+        checkLinkedPixel(row, col, previousRow, previousCol, sourceImageArray, visitedPixels, totalPixelsInSilhouette); // top left diagonal
+        checkLinkedPixel(row, col, nextRow, nextCol, sourceImageArray, visitedPixels, totalPixelsInSilhouette); // right bottom diagonal
     }
 
     /**
-     * Check if closest linked pixel is not background and not artifact, add it to stack
+     * Check closest non-visited pixels with same color
      */
-    private static void checkLinkedPixel(Stack<GPoint> stack, int row, int col, int[][] sourceImageArray, boolean[][] visitedPixels, int background) {
-        if (!visitedPixels[row][col] && sourceImageArray[row][col] != background) {
-            Color color = new Color(sourceImageArray[row][col]);
-            if (color.getRed() < getColorDeep() && color.getGreen() < getColorDeep() && color.getBlue() < getColorDeep())
-                stack.push(new GPoint(col, row));
+    private static void checkLinkedPixel(int previousRow, int previousCol, int nextRow, int nextCol, int[][] sourceImageArray, boolean[][] visitedPixels, AtomicInteger totalPixelsInSilhouette) {
+        if (!visitedPixels[nextRow][nextCol] &&
+                pixelToBW(sourceImageArray[nextRow][nextCol]) ==
+                        pixelToBW(sourceImageArray[previousRow][previousCol])) { // if the same color
+            totalPixelsInSilhouette.incrementAndGet();
+            depthFirstSearch(nextRow, nextCol, totalPixelsInSilhouette, sourceImageArray, visitedPixels);
         }
-    }
-
-    /**
-     * We assume that silhouette can't start at the zero point
-     *
-     * @param sourceImageArray array with colors for each pixels
-     * @return color
-     */
-    private static int getBackground(int[][] sourceImageArray) {
-        return sourceImageArray[0][0];
     }
 
     /**
@@ -185,24 +168,42 @@ public class Assignment12Part1 {
     }
 
     /**
-     * Change deep param depends on silhouette simple with one tone or not
-     * if simple remove more artifacts
+     * Change pixel to white-black using ARTEFACT_COEFFICIENT for color deep
+     *
+     * @param pixel current pixel
+     * @return color of current pixel
      */
-    private static void setColorDeep() {
-        if (isSilhouettePlain()) {
-            setColorDeep((int) (255 * ARTEFACT_COEFFICIENT));
-        } else setColorDeep(255);
+    private static Color pixelToBW(int pixel) {
+        //for transparent
+        int alpha = (pixel >> 24) & 0xff;
+        if (alpha == 0)
+            return Color.WHITE;
+
+        int red = (pixel >> 16) & 0xff;
+        int green = (pixel >> 8) & 0xff;
+        int blue = pixel & 0xff;
+
+        int avg = (red + green + blue) / 3;
+
+        int deep = (int) (255 * ARTEFACT_COEFFICIENT); // color deep
+        return avg > deep ? Color.WHITE : Color.BLACK;
     }
 
-    private static int getColorDeep() {
-        return colorDeep;
+    /**
+     * Get background color
+     *
+     * @return background color
+     */
+    public static Color getBackgroundColorBW() {
+        return backgroundColorBW;
     }
 
-    public static void setColorDeep(int deep) {
-        colorDeep = deep;
-    }
-
-    private static boolean isSilhouettePlain() {
-        return isSilhouettePlain;
+    /**
+     * Check background of current image and set color for it
+     *
+     * @param sourceImageArray array of colors for inputted image
+     */
+    public static void setBackgroundColorBW(int[][] sourceImageArray) {
+        backgroundColorBW = pixelToBW(sourceImageArray[0][0]);
     }
 }
