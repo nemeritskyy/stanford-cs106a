@@ -3,10 +3,8 @@ package com.shpp.p2p.cs.anemeritskyy.assignment13;
 import acm.graphics.GImage;
 
 import java.awt.*;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
+import java.util.*;
 import java.util.List;
-import java.util.Queue;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -18,7 +16,7 @@ public class Assignment13Part1 {
      * Folder with assets
      */
     private final static String ASSETS_PATH = "assets/";
-    private final static String DEFAULT_IMG = "test.jpg";
+    private final static String DEFAULT_IMG = "small.png";
     /**
      * All items that are PARAM times smaller than the largest object will be uncounted.
      */
@@ -35,6 +33,7 @@ public class Assignment13Part1 {
      * Color of background in black-white
      */
     private static Color backgroundColorBW;
+    private static int[][] handlingImage;
     public static int TEST_EXPECTED;
 
     /**
@@ -75,11 +74,14 @@ public class Assignment13Part1 {
         GImage sourceImage = new GImage(ASSETS_PATH + filename);
         int[][] sourceImageArray = sourceImage.getPixelArray();
         boolean[][] visitedPixels = new boolean[sourceImageArray.length][sourceImageArray[0].length];
+        handlingImage = new int[sourceImageArray.length][sourceImageArray[0].length];
         setBackgroundColorBW(sourceImageArray);
 
         for (int row = 0; row < sourceImageArray.length; ++row) {
             for (int col = 0; col < sourceImageArray[row].length; ++col) {
-                if (pixelToBW(sourceImageArray[row][col]) != getBackgroundColorBW()
+                Color currentColor = pixelToBW(sourceImageArray[row][col]);
+                handlingImage[row][col] = handlingImage[row][col] = new Color(currentColor.getRed(), currentColor.getGreen(), currentColor.getBlue()).getRGB();
+                if (currentColor != getBackgroundColorBW()
                         && !visitedPixels[row][col]) {
                     startInitSilhouettes(allSilhouettes, sourceImageArray, visitedPixels, row, col);
                 }
@@ -225,5 +227,9 @@ public class Assignment13Part1 {
      */
     public static void setBackgroundColorBW(int[][] sourceImageArray) {
         backgroundColorBW = pixelToBW(sourceImageArray[0][0]);
+    }
+
+    public static GImage getImageAfterHandling() {
+        return new GImage(handlingImage);
     }
 }
